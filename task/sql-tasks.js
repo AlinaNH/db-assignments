@@ -474,7 +474,7 @@ async function task_1_22(db) {
         OrderDetails.UnitPrice AS PricePerItem
     FROM Customers
         LEFT JOIN Orders ON Customers.CustomerId = Orders.CustomerId
-        LEFT JOIN Orderdetails ON Orders.OrderId = OrderDetails.OrderId
+        LEFT JOIN OrderDetails ON Orders.OrderId = OrderDetails.OrderId
         LEFT JOIN Products ON OrderDetails.ProductId = Products.ProductId
     WHERE OrderDetails.UnitPrice = (
         SELECT

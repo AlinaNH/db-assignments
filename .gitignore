@@ -36,3 +36,7 @@ node_modules
 # Editors crap
 .vscode
 .idea
+dumps/awesomedb_mongodb/awesomedb/dump/clientCriteria.bson
+dumps/awesomedb_mongodb/awesomedb/dump/clientCriteria.metadata.json
+dumps/awesomedb_mongodb/awesomedb/dump/opportunities.metadata.json
+dumps/awesomedb_mongodb/awesomedb/dump/opportunities.bson

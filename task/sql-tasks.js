@@ -306,18 +306,20 @@ async function task_1_14(db) {
 async function task_1_15(db) {
     let result = await db.query(`
         SELECT
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 1 AND YEAR(OrderDate) = 1997) AS January,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 2 AND YEAR(OrderDate) = 1997) AS February,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 3 AND YEAR(OrderDate) = 1997) AS March,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 4 AND YEAR(OrderDate) = 1997) AS April,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 5 AND YEAR(OrderDate) = 1997) AS May,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 6 AND YEAR(OrderDate) = 1997) AS June,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 7 AND YEAR(OrderDate) = 1997) AS July,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 8 AND YEAR(OrderDate) = 1997) AS August,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 9 AND YEAR(OrderDate) = 1997) AS September,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 10 AND YEAR(OrderDate) = 1997) AS October,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 11 AND YEAR(OrderDate) = 1997) AS November,
-            (SELECT COUNT(*) FROM Orders WHERE MONTH(OrderDate) = 12 AND YEAR(OrderDate) = 1997) AS December
+            COUNT(CASE WHEN MONTH(OrderDate) = 1 THEN 0 END) AS January,
+            COUNT(CASE WHEN MONTH(OrderDate) = 2 THEN 0 END) AS February,
+            COUNT(CASE WHEN MONTH(OrderDate) = 3 THEN 0 END) AS March,
+            COUNT(CASE WHEN MONTH(OrderDate) = 4 THEN 0 END) AS April,
+            COUNT(CASE WHEN MONTH(OrderDate) = 5 THEN 0 END) AS May,
+            COUNT(CASE WHEN MONTH(OrderDate) = 6 THEN 0 END) AS June,
+            COUNT(CASE WHEN MONTH(OrderDate) = 7 THEN 0 END) AS July,
+            COUNT(CASE WHEN MONTH(OrderDate) = 8 THEN 0 END) AS August,
+            COUNT(CASE WHEN MONTH(OrderDate) = 9 THEN 0 END) AS September,
+            COUNT(CASE WHEN MONTH(OrderDate) = 10 THEN 0 END) AS October,
+            COUNT(CASE WHEN MONTH(OrderDate) = 11 THEN 0 END) AS November,
+            COUNT(CASE WHEN MONTH(OrderDate) = 12 THEN 0 END) AS December
+        FROM Orders
+        WHERE YEAR(OrderDate) = 1997
         LIMIT 1
     `);
     return result[0];
@@ -397,15 +399,11 @@ async function task_1_19(db) {
         SELECT
             Customers.CustomerID,
             Customers.CompanyName,
-            (
-                SELECT
-                    SUM(OrderDetails.UnitPrice * OrderDetails.Quantity)
-                FROM OrderDetails
-                LEFT JOIN Orders
-                    ON Orders.OrderId = OrderDetails.OrderId
-                WHERE Customers.CustomerId = Orders.CustomerId
-            ) AS \`TotalOrdersAmount, $\`
+            SUM(OrderDetails.UnitPrice * OrderDetails.Quantity) AS \`TotalOrdersAmount, $\`
         FROM Customers
+            LEFT JOIN Orders ON Customers.CustomerId = Orders.CustomerId
+            LEFT JOIN OrderDetails ON Orders.OrderId = OrderDetails.OrderId
+        GROUP BY CustomerID
         HAVING \`TotalOrdersAmount, $\` >= 10000
         ORDER BY \`TotalOrdersAmount, $\` DESC, CustomerId
     `);
@@ -425,15 +423,11 @@ async function task_1_20(db) {
         SELECT
             Employees.EmployeeID,
             CONCAT(Employees.FirstName, ' ', Employees.LastName) AS \`Employee Full Name\`,
-            (
-                SELECT
-                    SUM(OrderDetails.UnitPrice * OrderDetails.Quantity)
-                FROM OrderDetails
-                LEFT JOIN Orders
-                    ON OrderDetails.OrderId = Orders.OrderId
-                WHERE Orders.EmployeeId = Employees.EmployeeId
-            ) AS \`Amount, $\`
+            SUM(OrderDetails.UnitPrice * OrderDetails.Quantity) AS \`Amount, $\`
         FROM Employees
+            LEFT JOIN Orders ON Orders.EmployeeId = Employees.EmployeeId
+            LEFT JOIN OrderDetails ON OrderDetails.OrderId = Orders.OrderId
+        GROUP BY EmployeeID
         ORDER BY \`Amount, $\` DESC LIMIT 1
     `);
     return result[0];
@@ -468,23 +462,24 @@ async function task_1_21(db) {
  */
 async function task_1_22(db) {
     let result = await db.query(`
-    SELECT DISTINCT
-        Customers.CompanyName,
-        Products.ProductName,
-        OrderDetails.UnitPrice AS PricePerItem
-    FROM Customers
-        LEFT JOIN Orders ON Customers.CustomerId = Orders.CustomerId
-        LEFT JOIN OrderDetails ON Orders.OrderId = OrderDetails.OrderId
-        LEFT JOIN Products ON OrderDetails.ProductId = Products.ProductId
-    WHERE OrderDetails.UnitPrice = (
-        SELECT
-            MAX(OrderDetails.UnitPrice)
-        FROM OrderDetails
-        LEFT JOIN Products ON OrderDetails.ProductId = Products.ProductId
-        LEFT JOIN Orders ON Orders.OrderId = OrderDetails.OrderId
-        WHERE Customers.CustomerId = Orders.CustomerId
-    )
-    ORDER BY PricePerItem DESC, ProductName, CompanyName
+        SELECT DISTINCT
+            Customers.CompanyName,
+            Products.ProductName,
+            OrderDetails.UnitPrice AS PricePerItem
+        FROM Customers
+        JOIN Orders ON Customers.CustomerId = Orders.CustomerId
+        JOIN OrderDetails ON Orders.OrderId = OrderDetails.OrderId
+        JOIN Products ON OrderDetails.ProductId = Products.ProductId
+        JOIN (
+            SELECT
+                Customers.CustomerId,
+                MAX(OrderDetails.UnitPrice) AS PricePerItem
+            FROM Customers
+            JOIN Orders ON Customers.CustomerId = Orders.CustomerId
+            JOIN OrderDetails ON Orders.OrderId = OrderDetails.OrderId
+            GROUP BY CustomerId
+        ) subquery ON Customers.CustomerId = subquery.CustomerId AND OrderDetails.UnitPrice = subquery.PricePerItem
+        ORDER BY PricePerItem DESC, CompanyName, ProductName
     `);
     return result[0];
 }

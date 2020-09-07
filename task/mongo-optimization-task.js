@@ -12,8 +12,7 @@ const ObjectId = require('mongodb').ObjectID;
  * Test timeout is increased to 60sec for the function.
  * */
 async function before(db) {
-    await db.collection('opportunities').createIndex({'initiativeId': 1});
-    await db.collection('opportunities').createIndex({"contacts.questions.category_id": 1});
+    await db.collection('opportunities').createIndex({'initiativeId': 1, "contacts.questions.category_id": 1});
     await db.collection('clientCriteria').createIndex({'value': 1});
 }
 
@@ -230,12 +229,8 @@ async function task_3_1(db) {
                 pipeline: [
                     {
                         "$match" : {
-                            "versions.initiativeId" : ObjectId("58af4da0b310d92314627290")
-                        }
-                    },
-                    { $match:
-                        { $expr:
-                            { $eq: [ "$value",  "$$item" ] }
+                            "versions.initiativeId" : ObjectId("58af4da0b310d92314627290"),
+                            $expr: { $eq: [ "$value",  "$$item" ] }
                         }
                     }
                 ],

@@ -13,7 +13,7 @@ const ObjectId = require('mongodb').ObjectID;
  * */
 async function before(db) {
     await db.collection('opportunities').createIndex({'initiativeId': 1, "contacts.questions.category_id": 1});
-    await db.collection('clientCriteria').createIndex({'value': 1});
+    await db.collection('clientCriteria').createIndex({'value': 1, 'versions.initiativeId': 1});
 }
 
 /**
@@ -232,6 +232,9 @@ async function task_3_1(db) {
                             "versions.initiativeId" : ObjectId("58af4da0b310d92314627290"),
                             $expr: { $eq: [ "$value",  "$$item" ] }
                         }
+                    },
+                    {
+                        "$limit": 1
                     }
                 ],
                 "as" : "criteria"
